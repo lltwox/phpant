@@ -34,6 +34,13 @@ class Ant {
     private $currentNode = null;
 
     /**
+     * Simple storage to share values between closures
+     *
+     * @var array
+     */
+    private $storage = array();
+
+    /**
      * Constructor
      *
      * @param string $projectName
@@ -65,17 +72,15 @@ class Ant {
     {
         $node = $this->dom->createElement($name);
 
-        // first argument is list of attributes
-        if (isset($arguments[0]) && is_array($arguments[0])) {
-            foreach ($arguments[0] as $name => $value) {
-                $node->setAttribute($name, $value);
-            }
-        }
-
         $this->pushNode($node);
-        // second argument is closure, that builds child nodes
-        if (isset($arguments[1]) && is_callable($arguments[1])) {
-            $arguments[1]($this);
+        if (isset($arguments[0])) {
+            if (is_array($arguments[0])) {
+                foreach ($arguments[0] as $name => $value) {
+                    $node->setAttribute($name, $value);
+                }
+            } else if (is_callable($arguments[0])) {
+                $arguments[0]($this);
+            }
         }
         $this->popNode();
     }
@@ -105,6 +110,44 @@ class Ant {
     }
 
     /**
+     * Set list of attributes for current node
+     *
+     * @param array $attrs
+     */
+    public function setNodeAttrs(array $attrs)
+    {
+        foreach ($attrs as $name => $value) {
+            $this->currentNode->setAttribute($name, $value);
+        }
+    }
+
+    /**
+     * Store object in local ant storage
+     *
+     * @param string $key
+     * @param mixed $value
+     */
+    public function storeValue($key, $value)
+    {
+        $this->storage[$key] = $value;
+    }
+
+    /**
+     * Get value from storage
+     *
+     * @param string $key
+     * @return mixed
+     */
+    public function getValue($key)
+    {
+        if (!isset($this->storage[$key])) {
+            return null;
+        }
+
+        return $this->storage[$key];
+    }
+
+    /**
      * Save xml to disk
      *
      * @param string $filename
@@ -122,7 +165,7 @@ class Ant {
      * @param array $options - extra options to add to run in format
      *                         array(<key-with-minus> => <value>, ...)
      */
-    public function run($target = null, array $options = array())
+    public function run($target = null, $options = array())
     {
         $filename = tempnam(sys_get_temp_dir(), 'phpant-build-');
         $this->save($filename);
@@ -141,7 +184,7 @@ class Ant {
     /**
      * Add node to the current one and make it current
      *
-     * @param \DOMElement $node
+     * @param DOMElement $node
      */
     private function pushNode(\DOMElement $node)
     {
