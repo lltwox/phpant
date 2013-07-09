@@ -14,46 +14,47 @@ when using PHPAnt:
 ```php
 <?php
 $ant = new PHPAnt\Ant('Hello', 'compile');
-$ant->target(
-    array('name' => 'clean', 'description' => 'remove intermediate files'),
-    function($ant) {
-        $ant->delete(array('dir' => 'classes'));
-    }
-);
-$ant->target(
-    array('name' => 'clobber', 'depends' => 'clean', 'description' => 'remove all artifact files'),
-    function($ant) {
-        $ant->delete(array('file' => 'hello.jar'));
-    }
-);
-$ant->target(
-    array('name' => 'compile', 'description' => 'compile the Java source code to class files'),
-    function($ant) {
-        $ant->mkdir(array('dir' => 'classes'));
-        $ant->javac(array('srcdir' => '.', 'destdir' => 'classes'));
-    }
-);
-$ant->target(
-    array('name' => 'jar', 'depends' => 'compile', 'description' => 'create a Jar file for the application'),
-    function($ant) {
-        $ant->jar(
-            array('destfile' => 'hello.jar'),
-            function ($ant) {
-                $ant->fileset(array('dir' => 'classes', 'includes' => '**/*.class'));
-                $ant->manifest(array(),
-                    function($ant) {
-                        $ant->attribute(array('name' => 'Main-Class', 'value' => 'HelloProgram'));
-                    }
-                );
-            }
+$ant->target(function($ant) {
+    $ant->setNodeAttrs(array(
+        'name' => 'clean', 'description' => 'remove intermediate files'
+    ));
+    $ant->delete(array('dir' => 'classes'));
+});
+$ant->target(function($ant) {
+    $ant->setNodeAttrs(
+        array('name' => 'clobber', 'depends' => 'clean', 'description' => 'remove all artifact files')
+    );
+
+    $ant->delete(array('file' => 'hello.jar'));
+});
+$ant->target(function($ant) {
+    $ant->setNodeAttrs(
+        array('name' => 'compile', 'description' => 'compile the Java source code to class files')
+    );
+    $ant->mkdir(array('dir' => 'classes'));
+    $ant->javac(array('srcdir' => '.', 'destdir' => 'classes'));
+});
+$ant->target(function($ant) {
+    $ant->setNodeAttrs(
+        array('name' => 'jar', 'depends' => 'compile', 'description' => 'create a Jar file for the application')
+    );
+    $ant->jar(function ($ant) {
+        $ant->setNodeAttrs(
+            array('destfile' => 'hello.jar')
         );
-    }
-);
+        $ant->fileset(array('dir' => 'classes', 'includes' => '**/*.class'));
+        $ant->manifest(function($ant) {
+            $ant->attribute(array('name' => 'Main-Class', 'value' => 'HelloProgram'));
+        });
+    });
+});
 $ant->run();
 ```
 
 Builder object provides `save(string $filename = 'build.xml')` method to save xml file for later use
-and `run(string $target)` method for xml file to be execute immediately.
+and `run(string $target)` method for xml file to be execute immediately. Also there are two methods 
+`storeValue($key, $value)` and `getValue($key)`, that provide access to simple storage, aimed to ease 
+data access from inside of closures (instead of `use($foo, $bar)` statements).
 
 ### How is it better, than normal XML files? ###
 
